@@ -36,7 +36,14 @@ textarea {
 
 <label>
   <input type="radio" name="mode" value="metro">
-  Metronome (2 Hz)
+  Metronome
+</label>
+
+<br><br>
+
+<label>
+  Metronome Hz:
+  <input type="number" id="hzInput" value="2" min="1" max="5" step="1">
 </label>
 
 <br><br>
@@ -67,8 +74,16 @@ function startTask() {
   document.getElementById("counter").innerText = "Tap SPACE key";
 
   if (getMode() === "metro") {
+    let hz = parseFloat(document.getElementById("hzInput").value);
+    if (isNaN(hz) || hz <= 0) {
+      alert("Hz must be a positive number.");
+      return;
+    }
+
+    let interval = 1000 / hz;
+
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    metroInterval = setInterval(beep, 500); // 2Hz = 500ms
+    metroInterval = setInterval(beep, interval);
   }
 }
 
@@ -115,11 +130,14 @@ document.addEventListener("keydown", function(e) {
 });
 
 function processData() {
-  // Remove first and last ITI to get 64
-  let trimmed = times.slice(1, 65);
+  // 最初の5ITIを除外 → index 5〜68 = 64個
+  let trimmed = times.slice(5, 69);
+
   document.getElementById("output").value =
     trimmed.map(x => x.toFixed(3)).join("\n");
-  document.getElementById("counter").innerText = "Finished (64 ITIs ready)";
+
+  document.getElementById("counter").innerText =
+    "Finished (64 ITIs ready)";
 }
 
 function copyData() {
