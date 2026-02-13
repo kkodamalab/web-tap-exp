@@ -43,7 +43,7 @@ textarea {
 
 <label>
   Metronome Hz:
-  <input type="number" id="hzInput" value="2" min="1" max="5" step="1">
+  <input type="number" id="hzInput" value="2.0" min="0.5" max="5" step="0.5">
 </label>
 
 <br><br>
@@ -71,12 +71,13 @@ function startTask() {
   tapCount = 0;
   lastTime = null;
   document.getElementById("output").value = "";
-  document.getElementById("counter").innerText = "Tap [SPACE] key";
+  document.getElementById("counter").innerText = "Tap SPACE key";
 
   if (getMode() === "metro") {
     let hz = parseFloat(document.getElementById("hzInput").value);
-    if (isNaN(hz) || hz <= 0) {
-      alert("Hz must be a positive number.");
+
+    if (isNaN(hz) || hz < 0.5 || hz > 5) {
+      alert("Hz must be between 0.5 and 5.");
       return;
     }
 
