@@ -65,26 +65,32 @@ let tapCount = 0;
 let maxTap = 70;
 let metroInterval = null;
 let audioCtx = null;
+let currentCondition = "";
 
 function startTask() {
   times = [];
   tapCount = 0;
   lastTime = null;
   document.getElementById("output").value = "";
-  document.getElementById("counter").innerText = "Tap [SPACE] key";
+  document.getElementById("counter").innerText = "Tap SPACE key";
 
   if (getMode() === "metro") {
     let hz = parseFloat(document.getElementById("hzInput").value);
 
-    if (isNaN(hz) || hz < 0.5 || hz > 5) {
-      alert("Hz must be between 0.5 and 5.");
+    if (isNaN(hz) || hz < 0.5 || hz > 4) {
+      alert("Hz must be between 0.5 and 4.");
       return;
     }
 
     let interval = 1000 / hz;
 
+    currentCondition = "Metronome-" + hz + "Hz";
+
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     metroInterval = setInterval(beep, interval);
+
+  } else {
+    currentCondition = "Self-paced";
   }
 }
 
@@ -131,8 +137,7 @@ document.addEventListener("keydown", function(e) {
 });
 
 function processData() {
-  // 最初の5ITIを除外 → index 5〜68 = 64個
-  let trimmed = times.slice(5, 69);
+  let trimmed = times.slice(5, 69); // 64点
 
   document.getElementById("output").value =
     trimmed.map(x => x.toFixed(3)).join("\n");
@@ -148,13 +153,33 @@ function copyData() {
 }
 
 function downloadCSV() {
-  const text = document.getElementById("output").value;
-  const blob = new Blob([text], { type: 'text/csv' });
+  let trimmed = times.slice(5, 69);
+
+  let csvContent = "Condition," + currentCondition + "\n";
+  csvContent += "ITI_ms\n";
+  trimmed.forEach(val => {
+    csvContent += val.toFixed(3) + "\n";
+  });
+
+  const blob = new Blob([csvContent], { type: 'text/csv' });
   const url = window.URL.createObjectURL(blob);
+
+  const now = new Date();
+  const timestamp =
+    now.getFullYear().toString() +
+    String(now.getMonth()+1).padStart(2,'0') +
+    String(now.getDate()).padStart(2,'0') + "_" +
+    String(now.getHours()).padStart(2,'0') +
+    String(now.getMinutes()).padStart(2,'0') +
+    String(now.getSeconds()).padStart(2,'0');
+
+  const filename = currentCondition + "_" + timestamp + ".csv";
+
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'ITI_data.csv';
+  a.download = filename;
   a.click();
+
   window.URL.revokeObjectURL(url);
 }
 </script>
