@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Online Tapping Experiment (BHK Demo)</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  margin: 40px;
+}
+button {
+  font-size: 16px;
+  padding: 10px 20px;
+  margin: 5px;
+}
+textarea {
+  width: 90%;
+  height: 150px;
+  margin-top: 15px;
+}
+#counter {
+  font-size: 24px;
+  margin: 20px;
+}
+</style>
+</head>
+<body>
+
+<h2>Online Tapping Experiment</h2>
+
+<label>
+  <input type="radio" name="mode" value="self" checked>
+  Self-paced
+</label>
+
+<label>
+  <input type="radio" name="mode" value="metro">
+  Metronome (2 Hz)
+</label>
+
+<br><br>
+
+<button onclick="startTask()">Start</button>
+<button onclick="resetTask()">Reset</button>
+
+<div id="counter">Press Start</div>
+
+<textarea id="output" placeholder="ITI (ms) will appear here..."></textarea><br>
+
+<button onclick="copyData()">Copy ITI</button>
+<button onclick="downloadCSV()">Download CSV</button>
+
+<script>
+let times = [];
+let lastTime = null;
+let tapCount = 0;
+let maxTap = 70;
+let metroInterval = null;
+let audioCtx = null;
+
+function startTask() {
+  times = [];
+  tapCount = 0;
+  lastTime = null;
+  document.getElementById("output").value = "";
+  document.getElementById("counter").innerText = "Tap SPACE key";
+
+  if (getMode() === "metro") {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    metroInterval = setInterval(beep, 500); // 2Hz = 500ms
+  }
+}
+
+function resetTask() {
+  times = [];
+  tapCount = 0;
+  lastTime = null;
+  clearInterval(metroInterval);
+  document.getElementById("counter").innerText = "Reset";
+  document.getElementById("output").value = "";
+}
+
+function getMode() {
+  return document.querySelector('input[name="mode"]:checked').value;
+}
+
+function beep() {
+  const osc = audioCtx.createOscillator();
+  osc.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.05);
+}
+
+document.addEventListener("keydown", function(e) {
+  if (e.code !== "Space") return;
+  if (tapCount >= maxTap) return;
+
+  const now = performance.now();
+
+  if (lastTime !== null) {
+    times.push(now - lastTime);
+  }
+
+  lastTime = now;
+  tapCount++;
+
+  document.getElementById("counter").innerText =
+    "Taps: " + tapCount + " / " + maxTap;
+
+  if (tapCount === maxTap) {
+    clearInterval(metroInterval);
+    processData();
+  }
+});
+
+function processData() {
+  // Remove first and last ITI to get 64
+  let trimmed = times.slice(1, 65);
+  document.getElementById("output").value =
+    trimmed.map(x => x.toFixed(3)).join("\n");
+  document.getElementById("counter").innerText = "Finished (64 ITIs ready)";
+}
+
+function copyData() {
+  const text = document.getElementById("output").value;
+  navigator.clipboard.writeText(text);
+  alert("Copied!");
+}
+
+function downloadCSV() {
+  const text = document.getElementById("output").value;
+  const blob = new Blob([text], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ITI_data.csv';
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+</script>
+
+</body>
+</html>
